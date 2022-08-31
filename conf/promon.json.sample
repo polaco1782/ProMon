@@ -1,0 +1,177 @@
+{
+    "Autoloader":
+    {
+        "fork_plugins": true,
+        "debug": true
+    },
+
+    "Plugins":
+    {
+        "ProxMox":
+        {
+            "enabled": true,
+            "crontab": "0 */1 * * *",
+            "hostname": "",
+            "username": "",
+            "password": "",
+            "realm":    "pam",
+            "port":     8006
+        },
+        
+        "SlackWarn":
+        {
+            "enabled": true,
+            "hook_url": "",
+            "_hook_url": "",
+            "author": "promon Monitoring",
+            "header": "Automated message",
+            "color":  "#ff0000",
+            "loglevel": "critical,warn",
+            "ignored_classes": ""
+        },
+
+        "ProxMox_Diskspace":
+        {
+            "enabled": false,
+            "_crontab":  "0 */12 * * *",
+            "crontab":  "* * * * *",
+            "threshold_warn": 75,
+            "threshold_critical": 90
+        },
+
+        "ProxMox_Storage":
+        {
+            "enabled": false,
+            "crontab":  "* * * * *",
+            "threshold_warn": 75,
+            "threshold_critical": 90
+        },
+
+        "ProxMox_Memory":
+        {
+            "enabled": false,
+            "crontab": "*/5 * * * *",
+            "threshold_warn": 75,
+            "threshold_critical": 90
+        },
+
+        "ProxMox_ICMP":
+        {
+            "enabled": false,
+            "crontab": "* * * * *",
+            "timeout": 1000
+        },
+
+        "ProxMox_IPAM":
+        {
+            "enabled": false,
+            "api_url": "",
+            "api_key": "",
+            "note": "This host was added/updated by promon Monitoring scripts",
+            "crontab": "* * * * *",
+            "timeout": 1000
+        },
+
+        "ProxMox_StatPing":
+        {
+            "enabled": false,
+            "api_url": "",
+            "api_key": "",
+            "crontab": "* * * * *",
+            "timeout": 1000
+        },
+
+        "ProxMox_CPU":
+        {
+            "enabled": false,
+            "crontab": "* * * * *"
+        },
+
+        "LoggingStdout":
+        {
+            "enabled": true,
+            "loglevel": "log,warn,critical,error"
+        },
+
+        "MySQL":
+        {
+            "enabled": false,
+            "crontab": "* * * * *",
+            "host": "",
+            "user": "",
+            "password": "",
+            "database": "",
+            "query": "SELECT * FROM sys.statements_with_runtimes_in_95th_percentile"
+        },
+
+        "Prometheus":
+        {
+            "enabled": false,
+            "crontab": "* * * * *"
+        },
+
+        "SSH":
+        {
+            "enabled": false,
+            "crontab": "* * * * *",
+            "host": "",
+            "port": 22,
+            "username": "",
+            "password": "",
+            "command": "df -h"
+        },
+
+        "LDAP":
+        {
+            "enabled": false,
+            "crontab": "* * * * *",
+            "host": "",
+            "bind_dn": "",
+            "bind_pwd": ""
+        },
+
+        "TCPconn":
+        {
+            "enabled": false,
+            "crontab": "* * * * *",
+            "timeout": 1,
+
+            "host": "google.com",
+
+            "port": [
+                80,
+                443
+            ]
+        },
+
+        "NFS":
+        {
+            "enabled": false,
+            "crontab": "* * * * *"
+        },
+
+        "SIP":
+        {
+            "enabled": false,
+            "crontab": "* * * * *",
+            "timeout": 5,
+
+            "servers": [
+                {
+                    "name": "test sip server 1",
+                    "sip_uri": "",
+                    "address": "",
+                    "port": 5060,
+                    "protocol": "udp"
+                },
+                {
+                    "name": "test sip server 2",
+                    "sip_uri": "",
+                    "address": "",
+                    "port": 5060,
+                    "protocol": "udp"
+                }
+            ]
+        }
+    }
+}
