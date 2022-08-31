@@ -28,8 +28,17 @@ define('LOGGING_PLUGIN', (1 << 2));
 define('WARN_PLUGIN', (1 << 3));
 define('METRIC_PLUGIN', (1 << 4));
 
+if(extension_loaded('swoole')) {
+    require_once __DIR__ . '/api_swoole.php';
+} elseif(extension_loaded('pcntl')) {
+    require_once __DIR__ . '/api_pcntl.php';
+} else {
+    require_once __DIR__ . '/api_single.php';
+}
+
 class Autoloader
 {
+    use Runner;
     static $plugins = [];
     static $disabled = [];
     static $conf;
@@ -44,11 +53,11 @@ class Autoloader
         self::$conf = json_decode(file_get_contents('conf/promon.json'));
 
         if(!self::$conf) {
-            throw new \Exception('ERROR: Could not load configuration file!');
+            trigger_error('ERROR: Could not load configuration file!', E_USER_ERROR);
         }
 
         if (!self::$conf->Autoloader) {
-            throw new \Exception("Autoloader configuration section is broken or missing!");
+            trigger_error("Autoloader configuration section is broken or missing!", E_USER_ERROR);
         }
 
         // load each plugin file
@@ -58,16 +67,18 @@ class Autoloader
 
         $classes = [];
         foreach (get_declared_classes() as $class) {
-            // check if class is internal to PHP code
-            if ((new \ReflectionClass($class))->isInternal() == true) {
+            $k = new \ReflectionClass($class);
+
+            // skip internal PHP code
+            if ($k->isInternal() == true)
                 continue;
-            }
 
-            // supress: explode may return only one element. Not critical.
-            @list($namespace,$classname) = explode('\\', $class);
+            $namespace = $k->getNamespaceName();
+            $classname = $k->getShortName();
 
-            // only accept classes under Plugin namespace
-            if ($namespace != 'Plugin') {
+            // skip classes that are not plugins
+            if(!is_subclass_of($class, 'API\PluginApi'))
+            {
                 __debug("Class {$classname} is not in Plugin namespace!");
                 self::$disabled[] = $classname;
                 continue;
@@ -128,6 +139,8 @@ class Autoloader
         foreach ($classes as $class) {
             self::$plugins[$class] = new $class();
         }
+
+        __debug(YELLOW."Loaded ".count(self::$plugins)." plugins!".GRAY);
     }
 
     public static function unload_plugins()
@@ -154,35 +167,12 @@ class Autoloader
         var_dump(self::$plugins);
     }
 
-    public static function run_plugins($plugin=null)
+    public static function single_run($plugin)
     {
-        if ($plugin) {
-            if (isset(self::$plugins['Plugin\\'.$plugin])) {
-                self::$plugins['Plugin\\'.$plugin]->run();
-            } else {
-                throw new \Exception("Plugin {$plugin} is not loaded!");
-            }
-        }
-        else
-        {
-            foreach (self::$plugins as $p) {
-                // run each instance into a forked process
-                if (self::$conf->Autoloader->fork_plugins && $p->parse_crontab()) {
-                    $pid = pcntl_fork();
-                    if ($pid == 0) {
-                            $p->run();
-                        exit(0);
-                    } elseif ($pid == -1) {
-                        throw new \Exception("Could not fork() a new children process!");
-                    }
-                } else {
-                    if ($p->parse_crontab()) {
-                        $p->run();
-                    }
-                }
-            }
-
-            __debug("Dispatched all plugins!");
+        if (isset(self::$plugins['Plugin\\'.$plugin])) {
+            self::$plugins['Plugin\\'.$plugin]->run();
+        } else {
+            trigger_error("Plugin {$plugin} not found!", E_USER_NOTICE);
         }
     }
 }
@@ -245,7 +235,7 @@ class PluginApi
         $conf = json_decode(file_get_contents('conf/promon.json'))->Plugins;
 
         if (!$conf) {
-            throw new \Exception("Plugin configuration section is broken or missing!");
+            trigger_error("Plugin configuration section is broken or missing!");
         }
 
         // supress: section may be missing. (eg: no config needed)
@@ -275,7 +265,7 @@ class PluginApi
         $crontab = explode(' ', trim($this->config->crontab));
 
         if (count($crontab) != 5) {
-            throw new \Exception("Broken crontab section for {$this->plugin}!");
+            trigger_error("Broken crontab section for {$this->plugin}!");
         }
 
         foreach ($crontab as $k => &$v) {

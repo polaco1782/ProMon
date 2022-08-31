@@ -1,4 +1,3 @@
-#!/usr/bin/env php
 <?php
 
 /*
@@ -21,51 +20,43 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-// change current script basedir before anything
-chdir(dirname(__FILE__));
+namespace API;
 
-include 'api/api.php';
-include 'api/common.php';
+use \API\PluginApi;
 
-\API\Autoloader::load_plugins();
-
-$wait = 60;
-$next = 0;
-
-// get command line arguments
-$args = getopt('', ['run:', 'singlerun']);
-
-// priority is command line argument
-if (isset($args['run']))
+trait Runner
 {
-    \API\Autoloader::single_run($args['run']);
-}
-else
-{
-    if(\API\Autoloader::$conf->Autoloader->single_run || isset($args['singlerun']))
+    public static function run_plugins()
     {
-        \API\Autoloader::run_plugins();
-    }
-    else
-    {
-        for(;;)
-        {
-            $stamp = time();
-            do {
-                if ($stamp >= $next) {break;}
-                $diff = $next - $stamp;
-                sleep($diff);
-                $stamp = time();
-            } while ($stamp < $next);
-
-            __debug("Tick");
-
-            \API\Autoloader::run_plugins();
-
-            __debug("Tock");
-
-            $next = $stamp + $wait;
-            sleep($wait);
+        foreach (self::$plugins as $p) {
+            // run each instance into a forked process
+            if (self::$conf->Autoloader->fork_plugins && $p->parse_crontab()) {
+                $pid = pcntl_fork();
+                if ($pid == 0) {
+                    $p->run();
+                    exit(0);
+                } elseif ($pid == -1) {
+                    trigger_error("Could not fork() a new children process!", E_USER_ERROR);
+                }
+            } else {
+                if ($p->parse_crontab()) {
+                    $p->run();
+                }
+            }
         }
+
+        while(count($childs) > 0) {
+            foreach($childs as $key => $pid) {
+                $res = pcntl_waitpid($pid, $status, WNOHANG);
+                
+                // If the process has already exited
+                if($res == -1 || $res > 0)
+                    unset($childs[$key]);
+            }
+            
+            sleep(1);
+        }
+
+        __debug("PCNTL Dispatched all plugins!");
     }
 }

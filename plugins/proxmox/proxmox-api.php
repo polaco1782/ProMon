@@ -191,7 +191,7 @@ class ProxMox extends \API\PluginApi
                 //return self::$Client->delete($api, $params);
                 break;
             default:
-                throw new \Exception('HTTP Request method not allowed.');
+                trigger_error('HTTP Request method not allowed.');
         }
 
         $response = curl_exec(self::$curl);

@@ -1,4 +1,3 @@
-#!/usr/bin/env php
 <?php
 
 /*
@@ -21,51 +20,37 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-// change current script basedir before anything
-chdir(dirname(__FILE__));
+namespace API;
 
-include 'api/api.php';
-include 'api/common.php';
+use \API\PluginApi;
 
-\API\Autoloader::load_plugins();
-
-$wait = 60;
-$next = 0;
-
-// get command line arguments
-$args = getopt('', ['run:', 'singlerun']);
-
-// priority is command line argument
-if (isset($args['run']))
+trait Runner
 {
-    \API\Autoloader::single_run($args['run']);
-}
-else
-{
-    if(\API\Autoloader::$conf->Autoloader->single_run || isset($args['singlerun']))
+    public static function run_plugins()
     {
-        \API\Autoloader::run_plugins();
-    }
-    else
-    {
-        for(;;)
+        $processes = [];
+
+        foreach (self::$plugins as $p)
         {
-            $stamp = time();
-            do {
-                if ($stamp >= $next) {break;}
-                $diff = $next - $stamp;
-                sleep($diff);
-                $stamp = time();
-            } while ($stamp < $next);
-
-            __debug("Tick");
-
-            \API\Autoloader::run_plugins();
-
-            __debug("Tock");
-
-            $next = $stamp + $wait;
-            sleep($wait);
+            // run each instance into a forked process
+            if (self::$conf->Autoloader->fork_plugins && $p->parse_crontab()) {
+                $p = new \Swoole\Process(function() use ($p) {
+                    $p->run();
+                });
+                $processes[] = $p;
+                $p->start();
+            } else {
+                if ($p->parse_crontab()) {
+                    $p->run();
+                }
+            }
         }
+
+        // wait for all processes to finish
+        foreach ($processes as $p) {
+            $p->wait();
+        }
+
+        __debug("SWOOLE: Dispatched all plugins!");
     }
 }

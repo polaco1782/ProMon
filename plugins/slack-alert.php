@@ -39,7 +39,7 @@ class SlackWarn extends \API\PluginApi
         parent::__construct(WARN_PLUGIN);
 
         if (!$this->config->hook_url) {
-            throw new \Exception('Empty slack hook_url parameter!');
+            trigger_error('Empty slack hook_url parameter!');
         }
 
         // load active logging levels

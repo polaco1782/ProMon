@@ -66,10 +66,10 @@ class WebView extends \API\PluginApi
 
         switch (self::$pid = pcntl_fork()) {
             case -1: // failed to create process
-                throw new \Exception('ERROR: fork() failed!');
+                trigger_error('ERROR: fork() failed!', E_USER_ERROR);
             case 0: // child
                 pcntl_exec(PHP_BINARY, ['-S', '0.0.0.0:8000', __FILE__]);
-                throw new \Exception('ERROR: exec() failed!');
+                trigger_error('ERROR: exec() failed!', E_USER_ERROR);
         }
 
         //pcntl_sigprocmask(SIG_UNBLOCK, [SIGCHLD], $xxx);

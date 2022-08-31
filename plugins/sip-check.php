@@ -65,7 +65,7 @@ class SIP extends \API\PluginApi
         }
 
         if (!$this->socket) {
-            throw new \Exception("Could not create a new socket!");
+            trigger_error("Could not create a new socket!");
         }
 
         // connect socket, supressed warning messages
@@ -78,7 +78,7 @@ class SIP extends \API\PluginApi
 
         // retrieve client addr and port
         if (!socket_getsockname($this->socket, $this->cli_addr, $this->cli_port)) {
-            throw new \Exception("[{$server->name}] Could not get client socket information!");
+            trigger_error("[{$server->name}] Could not get client socket information!");
         }
 
         // setup socket timeouts
